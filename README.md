@@ -1,56 +1,52 @@
-# 10x Astro Starter
+# Flashcards AI
 
-A modern, opinionated starter template for building fast, accessible, and AI-friendly web applications.
+## 1. Project Description
+Flashcards AI is a web application that streamlines the creation of educational flashcards using artificial intelligence alongside manual methods. Users can:
+- Generate flashcards from text input (up to 10,000 characters) using AI.
+- Create, view, edit, and delete flashcards manually.
+- Edit flashcards in bulk with filtering by tags and keyword search.
+- Leverage a proven Spaced Repetition System (SRS) algorithm for optimized learning.
+- Securely manage user accounts with encryption for data in transit and at rest.
+- Export flashcards and learning statistics to CSV and JSON formats.
+- Access a dashboard displaying learning metrics through bar and pie charts.
+- Report AI errors with additional comments for system improvement.
 
-## Tech Stack
+## 2. Tech Stack
+- **Astro 5**
+- **TypeScript 5**
+- **React 19**
+- **Tailwind CSS 4**
+- **Shadcn/ui**
 
-- [Astro](https://astro.build/) v5.5.5 - Modern web framework for building fast, content-focused websites
-- [React](https://react.dev/) v19.0.0 - UI library for building interactive components
-- [TypeScript](https://www.typescriptlang.org/) v5 - Type-safe JavaScript
-- [Tailwind CSS](https://tailwindcss.com/) v4.0.17 - Utility-first CSS framework
+## 3. Getting Started Locally
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/flashcards-ai.git
+   cd flashcards-ai
+   ```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+3. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+4. Open your browser at `http://localhost:3000` to view the application.
 
-## Prerequisites
+## 4. Available Scripts
+- `npm run dev`  
+  Starts the development server with hot reloading.
+- `npm run build`  
+  Builds the application for production.
+- `npm run preview`  
+  Serves the production build locally.
+- `npm run lint`  
+  Runs ESLint to check code quality.
+- `npm run lint:fix`  
+  Automatically fixes ESLint issues.
 
-- Node.js v22.14.0 (as specified in `.nvmrc`)
-- npm (comes with Node.js)
-
-## Getting Started
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/przeprogramowani/10x-astro-starter.git
-cd 10x-astro-starter
-```
-
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Run the development server:
-
-```bash
-npm run dev
-```
-
-4. Build for production:
-
-```bash
-npm run build
-```
-
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint issues
-
-## Project Structure
-
+## 5. Project Structure
 ```md
 .
 ├── src/
@@ -62,33 +58,20 @@ npm run build
 ├── public/         # Public assets
 ```
 
-## AI Development Support
+## 6. Project Scope
+The MVP of Flashcards AI includes:
+- AI-driven flashcard generation from provided text.
+- Manual flashcard creation and editing.
+- Bulk editing with tag filtering and search functionality.
+- Integration with an open-source SRS algorithm.
+- Secure user registration, login, and data management.
+- Data export options for flashcards and learning statistics.
+- A dashboard displaying key learning metrics.
 
-This project is configured with AI development tools to enhance the development experience, providing guidelines for:
+## 7. Project Status
+The project is currently in the MVP stage. Future enhancements include expanded features for mobile responsiveness, advanced SRS algorithms, and further automation in flashcard generation.
 
-- Project structure
-- Coding practices
-- Frontend development
-- Styling with Tailwind
-- Accessibility best practices
-- Astro and React guidelines
+## 8. License
+This project is licensed under the [MIT License](LICENSE).
 
-### Cursor IDE
-
-The project includes AI rules in `.cursor/rules/` directory that help Cursor IDE understand the project structure and provide better code suggestions.
-
-### GitHub Copilot
-
-AI instructions for GitHub Copilot are available in `.github/copilot-instructions.md`
-
-### Windsurf
-
-The `.windsurfrules` file contains AI configuration for Windsurf.
-
-## Contributing
-
-Please follow the AI guidelines and coding practices defined in the AI configuration files when contributing to this project.
-
-## License
-
-MIT
+For more detailed documentation, please refer to the [Product Requirements Document](./prd.md).
