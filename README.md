@@ -1,7 +1,9 @@
 # Flashcards AI
 
 ## 1. Project Description
+
 Flashcards AI is a web application that streamlines the creation of educational flashcards using artificial intelligence alongside manual methods. Users can:
+
 - Generate flashcards from text input (up to 10,000 characters) using AI.
 - Create, view, edit, and delete flashcards manually.
 - Edit flashcards in bulk with filtering by tags and keyword search.
@@ -12,6 +14,7 @@ Flashcards AI is a web application that streamlines the creation of educational 
 - Report AI errors with additional comments for system improvement.
 
 ## 2. Tech Stack
+
 - **Astro 5**
 - **TypeScript 5**
 - **React 19**
@@ -19,22 +22,30 @@ Flashcards AI is a web application that streamlines the creation of educational 
 - **Shadcn/ui**
 
 ## 3. Getting Started Locally
+
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/yourusername/flashcards-ai.git
    cd flashcards-ai
    ```
+
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
+
 3. **Run the development server:**
+
    ```bash
    npm run dev
    ```
+
 4. Open your browser at `http://localhost:3000` to view the application.
 
 ## 4. Available Scripts
+
 - `npm run dev`  
   Starts the development server with hot reloading.
 - `npm run build`  
@@ -47,6 +58,7 @@ Flashcards AI is a web application that streamlines the creation of educational 
   Automatically fixes ESLint issues.
 
 ## 5. Project Structure
+
 ```md
 .
 ├── src/
@@ -59,7 +71,9 @@ Flashcards AI is a web application that streamlines the creation of educational 
 ```
 
 ## 6. Project Scope
+
 The MVP of Flashcards AI includes:
+
 - AI-driven flashcard generation from provided text.
 - Manual flashcard creation and editing.
 - Bulk editing with tag filtering and search functionality.
@@ -69,9 +83,11 @@ The MVP of Flashcards AI includes:
 - A dashboard displaying key learning metrics.
 
 ## 7. Project Status
+
 The project is currently in the MVP stage. Future enhancements include expanded features for mobile responsiveness, advanced SRS algorithms, and further automation in flashcard generation.
 
 ## 8. License
+
 This project is licensed under the [MIT License](LICENSE).
 
 For more detailed documentation, please refer to the [Product Requirements Document](./prd.md).
