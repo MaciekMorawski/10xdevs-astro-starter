@@ -1,6 +1,15 @@
-# AI Rules for {{project-name}}
+# AI Rules for Flashcards AI
 
-{{project-description}}
+Flashcards AI is a web application that streamlines the creation of educational flashcards using artificial intelligence alongside manual methods. Users can:
+
+- Generate flashcards from text input (up to 10,000 characters) using AI.
+- Create, view, edit, and delete flashcards manually.
+- Edit flashcards in bulk with filtering by tags and keyword search.
+- Leverage a proven Spaced Repetition System (SRS) algorithm for optimized learning.
+- Securely manage user accounts with encryption for data in transit and at rest.
+- Export flashcards and learning statistics to CSV and JSON formats.
+- Access a dashboard displaying learning metrics through bar and pie charts.
+- Report AI errors with additional comments for system improvement.
 
 ## Tech Stack
 
@@ -78,6 +87,8 @@ When modifying the directory structure, always update this section.
 
 ### Guidelines for Astro
 
+file pattern matches: *.astro
+
 - Leverage View Transitions API for smooth page transitions (use ClientRouter)
 - Use content collections with type safety for blog posts, documentation, etc.
 - Leverage Server Endpoints for API routes
@@ -92,6 +103,8 @@ When modifying the directory structure, always update this section.
 - Leverage import.meta.env for environment variables
 
 ### Guidelines for React
+
+file pattern matches: *.tsx
 
 - Use functional components with hooks instead of class components
 - Never use "use client" and other Next.js directives as we use React with Astro
