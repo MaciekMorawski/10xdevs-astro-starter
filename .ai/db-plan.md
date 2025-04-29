@@ -1,105 +1,73 @@
-# Definiowanie schematu bazy danych
+# 10xCards Database Schema
 
 ## 1. Tabele
 
-### users  
+### 1.1. users
 
-Tabela przechowuje konta użytkowników z rolami, danymi uwierzytelniającymi i znacznikami czasu.  
+This table is managed by Supabase Auth.
 
-- id UUID PRIMARY KEY  
-- role user_role NOT NULL DEFAULT 'user'  
-- email TEXT NOT NULL UNIQUE  
-- username TEXT NOT NULL UNIQUE  
-- password_hash TEXT NOT NULL  
-- created_at TIMESTAMPTZ NOT NULL DEFAULT now()  
-- updated_at TIMESTAMPTZ NOT NULL DEFAULT now()[1]
+- id: UUID PRIMARY KEY
+- email: VARCHAR(255) NOT NULL UNIQUE
+- encrypted_password: VARCHAR NOT NULL
+- created_at: TIMESTAMPTZ NOT NULL DEFAULT now()
+- confirmed_at: TIMESTAMPTZ
 
-### flashcards  
+### 1.2. flashcards
 
-Tabela przechowuje fiszki wraz z danymi SRS, tekstem, sesją AI i flagą akceptacji.  
+- id: BIGSERIAL PRIMARY KEY
+- front: VARCHAR(200) NOT NULL
+- back: VARCHAR(500) NOT NULL
+- source: VARCHAR NOT NULL CHECK (source IN ('ai-full', 'ai-edited', 'manual'))
+- created_at: TIMESTAMPTZ NOT NULL DEFAULT now()
+- updated_at: TIMESTAMPTZ NOT NULL DEFAULT now()
+- generation_id: BIGINT REFERENCES generations(id) ON DELETE SET NULL
+- user_id: UUID NOT NULL REFERENCES users(id)
 
-- id UUID PRIMARY KEY  
-- user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE  
-- front_text VARCHAR(500) NOT NULL  
-- back_text VARCHAR(1000) NOT NULL  
-- language_code VARCHAR(10) NOT NULL  
-- source_url TEXT  
-- raw_text TEXT NOT NULL  
-- generation_session_id UUID NOT NULL  
-- next_review_at TIMESTAMPTZ NOT NULL  
-- interval INTEGER NOT NULL  
-- ease_factor NUMERIC(5,2) NOT NULL  
-- repetition_count INTEGER NOT NULL DEFAULT 0  
-- last_edited_at TIMESTAMPTZ NOT NULL DEFAULT now()  
-- accepted BOOLEAN NOT NULL DEFAULT false  
-- created_at TIMESTAMPTZ NOT NULL DEFAULT now()  
-- updated_at TIMESTAMPTZ NOT NULL DEFAULT now()[1]
+*Trigger: Automatically update the `updated_at` column on record updates.*
 
-### tags  
+### 1.3. generations
 
-Tabela służy do tagowania fiszek bez hierarchii.  
+- id: BIGSERIAL PRIMARY KEY
+- user_id: UUID NOT NULL REFERENCES users(id)
+- model: VARCHAR NOT NULL
+- generated_count: INTEGER NOT NULL
+- accepted_unedited_count: INTEGER NULLABLE
+- accepted_edited_count: INTEGER NULLABLE
+- source_text_hash: VARCHAR NOT NULL
+- source_text_length: INTEGER NOT NULL CHECK (source_text_length BETWEEN 1000 AND 10000)
+- generation_duration: INTEGER NOT NULL
+- created_at: TIMESTAMPTZ NOT NULL DEFAULT now()
+- updated_at: TIMESTAMPTZ NOT NULL DEFAULT now()
 
-- id UUID PRIMARY KEY  
-- name TEXT NOT NULL  
-- slug TEXT NOT NULL UNIQUE  
-- description TEXT  
-- color VARCHAR(20)  
-- created_at TIMESTAMPTZ NOT NULL DEFAULT now()  
-- updated_at TIMESTAMPTZ NOT NULL DEFAULT now()[1]
+### 1.4. generation_error_logs
 
-### flashcard_tags  
+- id: BIGSERIAL PRIMARY KEY
+- user_id: UUID NOT NULL REFERENCES users(id)
+- model: VARCHAR NOT NULL
+- source_text_hash: VARCHAR NOT NULL
+- source_text_length: INTEGER NOT NULL CHECK (source_text_length BETWEEN 1000 AND 10000)
+- error_code: VARCHAR(100) NOT NULL
+- error_message: TEXT NOT NULL
+- created_at: TIMESTAMPTZ NOT NULL DEFAULT now()
 
-Tabela łącząca fiszki z tagami (wiele-do-wielu).  
+## 2. Relacje
 
-- flashcard_id UUID NOT NULL REFERENCES flashcards(id) ON DELETE CASCADE  
-- tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE  
-- created_at TIMESTAMPTZ NOT NULL DEFAULT now()  
-- PRIMARY KEY[flashcard_id, tag_id](1)
+- Jeden użytkownik (users) ma wiele fiszek (flashcards).
+- Jeden użytkownik (users) ma wiele rekordów w tabeli generations.
+- Jeden użytkownik (users) ma wiele rekordów w tabeli generation_error_logs.
+- Każda fiszka (flashcards) może opcjonalnie odnosić się do jednej generacji (generations) poprzez generation_id.
 
-### error_reports  
+## 3. Indeksy
 
-Tabela zgłoszeń błędów w wygenerowanych fiszkach.  
+- Indeks na kolumnie `user_id` w tabeli flashcards.
+- Indeks na kolumnie `generation_id` w tabeli flashcards.
+- Indeks na kolumnie `user_id` w tabeli generations.
+- Indeks na kolumnie `user_id` w tabeli generation_error_logs.
 
-- id UUID PRIMARY KEY  
-- flashcard_id UUID NOT NULL REFERENCES flashcards(id) ON DELETE CASCADE  
-- user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE  
-- status error_status NOT NULL DEFAULT 'open'  
-- comment VARCHAR(500)  
-- created_at TIMESTAMPTZ NOT NULL DEFAULT now()  
-- updated_at TIMESTAMPTZ NOT NULL DEFAULT now()  
-- resolved_at TIMESTAMPTZ[1]
+## 4. Zasady RLS (Row-Level Security)
 
-## 2. Relacje  
+- W tabelach flashcards, generations oraz generation_error_logs wdrożyć polityki RLS, które pozwalają użytkownikowi na dostęp tylko do rekordów, gdzie `user_id` odpowiada identyfikatorowi użytkownika z Supabase Auth (np. auth.uid() = user_id).
 
-- users 1-* flashcards  
-- users 1-* error_reports  
-- flashcards *-* tags przez flashcard_tags  
-- flashcards 1-* error_reports  
+## 5. Dodatkowe uwagi
 
-## 3. Indeksy  
-
-- UNIQUE INDEX ON flashcards(user_id, front_text) zapobiegający duplikatom fiszek per użytkownik[1]  
-- INDEX ON flashcards(next_review_at) dla szybszego wyszukiwania zaplanowanych powtórek  
-- INDEX ON tags(slug) przyspieszający filtrowanie po slugu  
-- INDEX ON flashcard_tags(tag_id) dla przyspieszenia wyszukiwania fiszek po tagach  
-
-## 4. Zasady PostgreSQL (RLS)  
-
-- Włączenie row-level security na tabelach flashcards, flashcard_tags i error_reports  
-- Polityka umożliwiająca SELECT/INSERT/UPDATE/DELETE tylko wierszy, gdzie user_id = current_setting('app.current_user_id')::UUID[1]  
-
-## 5. Uwagi  
-
-- Wszystkie znaczniki czasu korzystają z typu TIMESTAMPTZ z domyślnym now() dla wsparcia stref czasowych.  
-- ease_factor przechowywany jako NUMERIC pozwala na precyzyjne wartości ułamkowe.  
-- generation_session_id może w przyszłości zostać powiązany z dedykowaną tabelą sesji AI.  
-- W MVP eksport danych odbywa się on-demand bez prowadzenia historii zadań exportjobs.
-
-Citations:
-[1] <https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/collection_e2e6dc18-ab4e-4c94-a53d-5eeb2a8c30d2/8a2eb3f8-311d-4688-8f67-401788f03fc4/session-plan-db.md>
-[2] <https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/collection_e2e6dc18-ab4e-4c94-a53d-5eeb2a8c30d2/899a32cd-b5c8-4cfb-8db8-0b7d2ab99896/prd.md>
-[3] <https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/collection_e2e6dc18-ab4e-4c94-a53d-5eeb2a8c30d2/af7b8c25-533d-4546-a8e6-74a69aa6c057/package.json>
-[4] <https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/collection_e2e6dc18-ab4e-4c94-a53d-5eeb2a8c30d2/aa17dbb8-b59e-423c-a5de-1a7e5863d865/tech-stack.md>
-
----
-Odpowiedź od Perplexity: pplx.ai/share
+- Trigger w tabeli flashcards ma automatycznie aktualizować kolumnę `updated_at` przy każdej modyfikacji rekordu.
