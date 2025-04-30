@@ -1,108 +1,96 @@
-# API Endpoint Implementation Plan: Generations Endpoint (POST /generations)
+# API Endpoint Implementation Plan: POST /generations
 
 ## 1. Przegląd punktu końcowego
 
-Endpoint służy do inicjacji procesu generowania propozycji fiszek przez AI na podstawie podanego tekstu. Walidacja sprawdza, czy długość tekstu mieści się w przedziale od 1000 do 10000 znaków. W zależności od wyniku wywoływana jest usługa AI, a następnie zapisywane są metadane generacji i zwracane propozycje fiszek.
+Endpoint służy do inicjowania procesu generowania propozycji fiszek przez AI na podstawie tekstu dostarczonego przez użytkownika. Jego zadaniem jest:
+
+- Walidacja danych wejściowych (w szczególności długości `source_text`)
+- Wywołanie zewnętrznego serwisu AI generującego propozycje fiszek
+- Zapisanie metadanych generacji w bazie danych (tabela `generations`)
+- Zwrot wygenerowanych propozycji fiszek oraz liczby wygenerowanych pozycji
 
 ## 2. Szczegóły żądania
 
-- **Metoda HTTP:** POST
-- **Struktura URL:** /generations
-- **Parametry:**
-  - **Wymagane (w ciele żądania):**
-    - `source_text`: string (1000-10000 znaków)
-- **Request Body Example:**
+- **Metoda HTTP**: POST
+- **URL**: /generations
+- **Parametry**:
+  - **Wymagane**:
+    - `source_text` (string) – tekst wejściowy o długości od 1000 do 10000 znaków
+  - **Opcjonalne**: brak
+- **Przykład Request Body**:
 
   ```json
   {
-    "source_text": "User provided text that must contain between 1000 and 10000 characters..."
+    "source_text": "User provided text with length between 1000 and 10000 characters"
   }
   ```
 
 ## 3. Wykorzystywane typy
 
-DTO/Command Model:
-GenerateFlashcardsCommand (typ reprezentujący dane wejściowe)
-GenerationCreateResponseDto (typ reprezentujący odpowiedź z metadanymi oraz propozycjami fiszek)
-FlashcardProposalDto (typ reprezentujący pojedynczą propozycję fiszki)
+- **GenerateFlashcardsCommand**: Model wejściowy zawierający pole `source_text`.
+- **GenerationCreateResponseDto**: Model odpowiedzi zawierający:
+  - `generation_id` (number)
+  - `flashcards_proposals` (tablica obiektów typu FlashcardProposalDto)
+  - `generated_count` (number)
+- **FlashcardProposalDto**: Pojedyncza propozycja fiszki z polami:
+  - `front` (string)
+  - `back` (string)
+  - `source` – wartość stała: "ai-full"
 
 ## 4. Szczegóły odpowiedzi
 
-- **Status 201 (Created)**:
-
-Zwracany obiekt zawiera:
-
-- `generation_id`: number
-- `flashcards_proposals`: array of FlashcardProposalDto
-- `generated_count`: number
-
-- **Response Body Example:**
+- **Sukces (HTTP 201)**:
 
   ```json
   {
     "generation_id": 123,
     "flashcards_proposals": [
-      { "front": "Generated Question", "back": "Generated Answer", "source": "ai-full" }
+       { "front": "Generated Question", "back": "Generated Answer", "source": "ai-full" }
     ],
     "generated_count": 5
   }
   ```
 
-- **Kody błędów**:
--- 400: Nieprawidłowe dane wejściowe.
--- 401: Nieautoryzowany dostęp.
--- 500: Błąd wewnętrzny (np. problem z usługą AI).
+- **Kody statusu**:
+  - 201: Pomyślne utworzenie generacji
+  - 400: Błędne dane wejściowe (np. niepoprawna długość `source_text`)
+  - 500: Błąd serwera (np. awaria serwisu AI lub błąd zapisu do bazy danych)
 
 ## 5. Przepływ danych
 
-Użytkownik wysyła żądanie POST z "source_text".
-Serwer weryfikuje, czy "source_text" spełnia wymogi długości.
-Po udanej walidacji, logika serwisu (np. generationService) wywołuje zewnętrzną usługę AI.
-Metadane generacji (takie jak model, generated_count, duration) są zapisywane w tabeli generations.
-W przypadku błędu usługi AI, informacje zapisywane są w tabeli generation_error_logs.
-Po pomyślnym wykonaniu, odpowiedź zawiera generation_id oraz propozycje fiszek.
+1. Odbiór żądania POST z ciałem zawierającym `source_text`.
+2. Walidacja danych wejściowych za pomocą biblioteki `zod`, sprawdzającej, że długość `source_text` wynosi od 1000 do 10000 znaków.
+3. Wywołanie dedykowanego serwisu (np. `generation.service`), który:
+   - Przekazuje `source_text` do zewnętrznego serwisu AI w celu wygenerowania propozycji fiszek.
+   - Oblicza i zapisuje metadane generacji w tabeli `generations` (m.in. `model`, `generated_count`, `source_text_hash`, `source_text_length`, `generation_duration`).
+4. W przypadku wystąpienia błędu podczas wywołania AI, rejestrowanie błędu w tabeli `generation_error_logs` z odpowiednimi danymi (np. `error_code`, `error_message`, `model`).
+5. Zwrócenie odpowiedzi do klienta z danymi zgodnymi z modelem `GenerationCreateResponseDto`.
 
 ## 6. Względy bezpieczeństwa
 
-Uwierzytelnienie: Endpoint dostępny tylko dla autoryzowanych użytkowników, korzystających z tokenów Supabase Auth.
-Autoryzacja: Polityki RLS umożliwiają dostęp tylko do danych powiązanych z danym użytkownikiem.
-Walidacja danych wejściowych: Upewnić się, że "source_text" mieści się w określonym zakresie.
-Szyfrowanie: Wszystkie dane przesyłane przez HTTPS, a dane wrażliwe odpowiednio chronione.
+- **Uwierzytelnianie i autoryzacja**: Endpoint powinien być zabezpieczony przy użyciu Supabase Auth. Upewnij się, że tylko autoryzowani użytkownicy mogą inicjować generacje.
+- **Walidacja danych**: Dokładna walidacja `source_text` przy pomocy `zod`, aby uniknąć potencjalnych ataków (np. SQL injection, przekroczenie limitów długości).
+- **Ograniczenie ekspozycji błędów**: Szczegóły błędów nie powinny być zwracane użytkownikowi. Niepełne informacje o błędach powinny być logowane wewnętrznie.
 
 ## 7. Obsługa błędów
 
-Błędne dane wejściowe (400):
-Jeśli długość "source_text" jest mniejsza niż 1000 lub większa niż 10000 znaków.
-Nieautoryzowany dostęp (401):
-Brak tokena lub nieprawidłowy token.
-Błąd serwera (500):
-Awaria usługi AI, problem z zapisem do bazy lub inne nieoczekiwane błędy.
-Każdy błąd powinien być logowany, a komunikaty błędów powinny być przyjazne dla użytkownika, nie ujawniając wrażliwych informacji.
+- **Błędne dane wejściowe (400)**: Jeżeli `source_text` nie mieści się w wymaganym zakresie długości, zwróć błąd 400 z odpowiednią wiadomością.
+- **Błąd serwisu AI (500)**: W przypadku awarii podczas komunikacji z serwisem AI, złap wyjątek, zaloguj błąd (oraz zapisz wpis w tabeli `generation_error_logs`) i zwróć błąd 500.
+- **Błąd bazy danych (500)**: W przypadku problemów z zapisem do bazy danych, zwróć błąd 500 wraz z logowaniem błędu.
 
 ## 8. Rozważania dotyczące wydajności
 
-Upewnić się, że usługa walidacji danych działa szybko, aby nie blokować głównego wątku.
-Optymalizacja wywołań do usługi AI – użycie asynchronicznych wywołań i poprawne zarządzanie timeoutami.
-Paginacja i ograniczenie żądań w innych endpointach mogą być punktem odniesienia, choć w tym przypadku nie dotyczy to bezpośrednio pojedynczego żądania generacji.
+- **Timeout dla wywołania AI**: 60 sekund na czas oczekiwania, inaczej błąd timeout.
+- **Asynchroniczne przetwarzanie**: Rozważ możliwość przetwarzania asynchronicznego generacji, zwłaszcza w warunkach dużego obciążenia.
+- **Monitoring**: Implementuj mechanizmy monitorowania wydajności endpointu i serwisu AI.
 
 ## 9. Etapy wdrożenia
 
-Walidacja wejścia:
-Zaimplementować sprawdzanie długości "source_text" w kontrolerze lub dedykowanym middleware.
-Integracja z usługą AI:
-Wyodrębnić logikę wywołania usługi AI do nowego serwisu (np. genearionService w katalogu src/lib/services).
-Upewnić się, że usługa obsługuje asynchroniczność i timeouty.
-Operacje na bazie danych:
-Zapisać metadane generacji w tabeli generations.
-W przypadku błędów, zapisać logi w generation_error_logs.
-Obsługa odpowiedzi API:
-W przypadku powodzenia, zwrócić status 201 z obiektem typu GenerationCreateResponseDto.
-W przypadku błędów (400, 401, 500), zwrócić właściwy kod stanu i format błędu.
-Testy jednostkowe i integracyjne:
-Stworzyć testy walidujące długość "source_text".
-Przetestować integrację z usługą AI (można użyć mocków).
-Zweryfikować poprawność zapisu danych w bazie.
-Dokumentacja:
-Zaktualizować dokumentację API oraz diagramy przepływu danych.
-Przegląd i wdrożenie:
-Code review, testy end-to-end oraz wdrożenie na środowisko staging przed produkcją.
+1. Utworzenie pliku endpointu w katalogu `/src/pages/api`, np. `generations.ts`.
+2. Implementacja walidacji żądania przy użyciu `zod` (sprawdzenie długości `source_text`).
+3. Stworzenie serwisu (`/src/lib/generation.service`), który:
+   - Integruje się z zewnętrznym serwisem AI. Na etapie developmentu skorzystamy z mocków zamiast wywoływania serwisu AI.
+   - Obsługuje logikę zapisu do tabeli `generations` oraz rejestracji błędów w `generation_error_logs`.
+4. Dodanie mechanizmu uwierzytelniania poprzez Supabase Auth.
+5. Implementacja logiki endpointu, wykorzystującej utworzony serwis.
+6. Dodanie szczegółowego logowania akcji i błędów.
