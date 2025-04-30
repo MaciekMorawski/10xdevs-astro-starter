@@ -1,5 +1,7 @@
 # REST API plan
 
+<api_analysis>
+
 1. Main entities from the database schema [db-plan.md](1):
 
    1. users  
@@ -90,8 +92,7 @@
    - Bulk edit: filter by tags or search terms, apply updates to multiple records.  
    - Error reporting: create and update workflow.  
    - Export: generate on-demand without persistent jobs.
-
-# REST API Plan
+</api_analysis>
 
 ## 1. Resources
 
