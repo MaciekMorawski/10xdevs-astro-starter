@@ -42,7 +42,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // For database or other internal errors, log the error but return a generic message
     if (error instanceof Error) {
       // In production, this should use a proper logging service
-      return new Response(JSON.stringify({ error: "Internal server error" }), {
+      return new Response(JSON.stringify({ error: "Internal server error", msg: error.message }), {
         status: 500,
         headers: {
           "Content-Type": "application/json",
@@ -50,7 +50,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: "Unknown error occurred" }), {
+    const err = error as Error;
+
+    return new Response(JSON.stringify({ error: "Unknown error occurred", msg: err.message }), {
       status: 500,
       headers: {
         "Content-Type": "application/json",
