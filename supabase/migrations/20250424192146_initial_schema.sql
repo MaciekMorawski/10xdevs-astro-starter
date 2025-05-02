@@ -124,9 +124,6 @@ create policy "Users can insert their own error logs"
     to authenticated
     with check (auth.uid() = user_id);
 
-
- 
-
 -- Add foreign key constraint for flashcards.generation_id
 alter table flashcards
 add constraint flashcards_generation_id_fkey

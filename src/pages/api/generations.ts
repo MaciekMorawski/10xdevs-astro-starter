@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { APIRoute } from "astro";
 import type { GenerateFlashcardsCommand } from "../../types";
-import { GenerationService } from "../../lib/services/generation.service";
+import { GenerationService } from "../../lib/generation.service";
 
 export const prerender = false;
 
@@ -9,54 +9,44 @@ export const prerender = false;
 const generateFlashcardsSchema = z.object({
   source_text: z
     .string()
-    .min(1000, "Text must be at least 1000 characters")
+    .min(1000, "Text must be at least 1000 characters long")
     .max(10000, "Text must not exceed 10000 characters"),
 });
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    // Parse and validate the request body
+    // Parse and validate request body
     const body = (await request.json()) as GenerateFlashcardsCommand;
-    const validatedData = generateFlashcardsSchema.parse(body);
+    const validationResult = generateFlashcardsSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      return new Response(
+        JSON.stringify({
+          error: "Invalid request data",
+          details: validationResult.error.errors,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     // Initialize service and generate flashcards
-    const generationService = new GenerationService(locals.supabase);
-    const result = await generationService.generateFlashcards(validatedData.source_text);
+    const generationService = new GenerationService(locals.supabase, {
+      apiKey: import.meta.env.OPENROUTER_API_KEY,
+    });
+    const result = await generationService.generateFlashcards(body.source_text);
 
     return new Response(JSON.stringify(result), {
       status: 201,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return new Response(JSON.stringify({ error: error.errors }), {
-        status: 400,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-    }
-
-    // For database or other internal errors, log the error but return a generic message
-    if (error instanceof Error) {
-      // In production, this should use a proper logging service
-      return new Response(JSON.stringify({ error: "Internal server error", msg: error.message }), {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-    }
-
-    const err = error as Error;
-
-    return new Response(JSON.stringify({ error: "Unknown error occurred", msg: err.message }), {
+    console.error("Error processing generation request:", error);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
   }
 };

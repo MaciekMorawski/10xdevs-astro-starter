@@ -138,32 +138,7 @@ export interface Database {
       };
     };
     Views: Record<never, never>;
-    Functions: {
-      citext: {
-        Args: { "": boolean } | { "": string } | { "": unknown };
-        Returns: string;
-      };
-      citext_hash: {
-        Args: { "": string };
-        Returns: number;
-      };
-      citextin: {
-        Args: { "": unknown };
-        Returns: string;
-      };
-      citextout: {
-        Args: { "": string };
-        Returns: unknown;
-      };
-      citextrecv: {
-        Args: { "": unknown };
-        Returns: string;
-      };
-      citextsend: {
-        Args: { "": string };
-        Returns: string;
-      };
-    };
+    Functions: Record<never, never>;
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;
   };
